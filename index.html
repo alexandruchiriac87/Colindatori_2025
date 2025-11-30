@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colindători Bine Veniți - Cartier Tineri Buftea</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #header {
+            background: linear-gradient(to right, #dc2626, #16a34a);
+            color: white;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+        
+        #header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        #header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        #header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #header p {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            display: none;
+        }
+        
+        #pin-count {
+            background: rgba(255,255,255,0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #pin-count:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        /* Buton Info/Help */
+        #info-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        #info-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        
+        #main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #map-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* GRUP BUTOANE DREAPTA - PC & MOBIL */
+        #right-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        /* BUTON ADAUGA CASA - DREAPTA */
+        #add-btn-right {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dc2626, #16a34a);
+            color: white;
+            border: none;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #add-btn-right:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+
+        /* BUTON SHARE - DREAPTA */
+        #share-btn-right {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #25d366;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #share-btn-right:hover {
+            transform: scale(1.1);
+            background: #128C7E;
+        }
+        
+        /* GRUP BUTOANE STANGA */
+        #left-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        /* BUTON CENTRARE STANGA */
+        #center-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #center-btn:hover {
+            transform: scale(1.1);
+            background: #7c3aed;
+        }
+
+        /* BUTON GPS STANGA */
+        #gps-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #10b981;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #gps-btn:hover {
+            transform: scale(1.1);
+            background: #059669;
+        }
+        
+        #gps-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #gps-btn.loading {
+            background: #f59e0b;
+        }
+
+        /* STILURI BUTOANE MODALE */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #dc2626, #16a34a);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+        
+        .btn-secondary:hover {
+            background: #d1d5db;
+            transform: scale(1.05);
+        }
+        
+        .modal {
+            position: fixed;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            z-index: 2000;
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90vw;
+            max-width: 500px;
+        }
+        
+        .modal-add {
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .modal-view {
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 450px;
+        }
+        
+        .modal-list {
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 500px;
+            max-height: 70vh;
+        }
+
+        .modal-info {
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 500px;
+            max-height: 80vh;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1.25rem 1.25rem 0;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: #6b7280;
+            font-size: 1.5rem;
+            border-radius: 0.5rem;
+        }
+        
+        .close-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+            padding: 0 1.25rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #f9fafb;
+        }
+        
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #dc2626;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        .street-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #f9fafb;
+        }
+        
+        .street-input:focus {
+            outline: none;
+            border-color: #dc2626;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .icon-btn {
+            font-size: 2rem;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-btn:hover {
+            border-color: #fca5a5;
+            transform: scale(1.05);
+        }
+        
+        .icon-btn.selected {
+            background: #fee2e2;
+            border-color: #dc2626;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        
+        .success-box {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            margin: 0 1.25rem 1rem;
+        }
+        
+        .error-box {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 0 1.25rem 1rem;
+        }
+        
+        .success-text {
+            font-size: 0.875rem;
+            color: #166534;
+            font-weight: 500;
+        }
+        
+        .error-text {
+            font-size: 0.875rem;
+            color: #991b1b;
+        }
+        
+        .hint-text {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        
+        .pin-detail {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            padding: 0 1.25rem;
+        }
+        
+        .pin-info {
+            flex: 1;
+        }
+        
+        .pin-schedule {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 0.75rem;
+            margin: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+        }
+        
+        .pin-notes {
+            background: #fafafa;
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            margin: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+        
+        .divider {
+            border-top: 1px solid #e5e7eb;
+            margin: 1rem 1.25rem;
+            padding-top: 1rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0 1.25rem 1.25rem;
+        }
+        
+        .icon-delete {
+            color: #dc2626;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: background 0.2s;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-delete:hover {
+            background: #fee2e2;
+        }
+        
+        /* LISTA CASE */
+        .list-container {
+            padding: 0 1.25rem 1.25rem;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+        
+        .list-item:hover {
+            background: #f9fafb;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-item.visited {
+            background: #f0fdf4;
+            opacity: 0.7;
+        }
+        
+        .list-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .list-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .list-family {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+        
+        .list-address {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .list-schedule {
+            font-size: 0.75rem;
+            color: #059669;
+            margin-top: 0.25rem;
+        }
+        
+        .list-notes {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+            font-style: italic;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .checkbox.checked {
+            background: #10b981;
+            border-color: #10b981;
+        }
+        
+        .checkbox.checked::after {
+            content: "✓";
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .checkbox-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            cursor: pointer;
+        }
+        
+        .admin-controls {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 1rem 1.25rem;
+        }
+        
+        .admin-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .empty-list {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+        
+        #loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #dc2626;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .submit-btn-container {
+            background: white;
+            padding: 1.25rem;
+            border-top: 2px solid #e5e7eb;
+            position: sticky;
+            bottom: 0;
+        }
+        
+        /* BRAD ANIMAT - FIXAT PE TOATE DISPOZITIVELE */
+        .connection-status {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 999;
+            padding: 0.5rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        
+        .christmas-tree {
+            position: relative;
+            font-size: 24px;
+            text-align: center;
+            animation: tree-float 3s ease-in-out infinite;
+        }
+        
+        .tree-top {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .lights {
+            position: absolute;
+            top: -5px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff0000;
+            opacity: 0;
+            animation: lights-off 2s infinite;
+        }
+        
+        .connection-status.connected .light {
+            animation: lights-on 1.5s infinite;
+        }
+        
+        .connection-status.connected .light:nth-child(1) { animation-delay: 0s; }
+        .connection-status.connected .light:nth-child(2) { animation-delay: 0.3s; }
+        .connection-status.connected .light:nth-child(3) { animation-delay: 0.6s; }
+        .connection-status.connected .light:nth-child(4) { animation-delay: 0.9s; }
+        
+        @keyframes tree-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+        
+        @keyframes lights-on {
+            0%, 100% { 
+                opacity: 1;
+                background: #ff0000;
+                box-shadow: 0 0 10px #ff0000;
+            }
+            25% { 
+                background: #00ff00;
+                box-shadow: 0 0 10px #00ff00;
+            }
+            50% { 
+                background: #ffff00;
+                box-shadow: 0 0 10px #ffff00;
+            }
+            75% { 
+                background: #0000ff;
+                box-shadow: 0 0 10px #0000ff;
+            }
+        }
+        
+        @keyframes lights-off {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.1; }
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3000;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            animation: slideDown 0.3s ease-out;
+            background: white;
+            border: 2px solid #e5e7eb;
+            max-width: 90vw;
+            text-align: center;
+        }
+        
+        .toast.success {
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+        
+        .toast.error {
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -100%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Tooltip personalizat pentru informații detaliate */
+        .custom-tooltip {
+            background: white;
+            border: 2px solid #dc2626;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 280px;
+        }
+        
+        .tooltip-family {
+            font-weight: bold;
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tooltip-address {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .tooltip-schedule {
+            font-size: 13px;
+            color: #059669;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tooltip-notes {
+            font-size: 13px;
+            color: #6b7280;
+            font-style: italic;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+
+        /* Stiluri pentru marker-ele vizitate */
+        .visited-marker {
+            opacity: 0.6;
+            filter: grayscale(0.7) brightness(1.2);
+            transition: all 0.3s ease;
+        }
+        
+        .visited-marker::before {
+            content: "✅";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 16px;
+            background: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        /* Buton ștergere în tooltip */
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+            width: 100%;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+        
+        /* Modal confirmare ștergere */
+        .delete-confirm-modal {
+            max-width: 400px;
+        }
+        
+        .delete-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0 1.25rem 1.25rem;
+        }
+
+        /* Stiluri pentru modalul de info */
+        .info-content {
+            padding: 0 1.25rem 1.25rem;
+        }
+        
+        .info-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-steps {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .info-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .step-number {
+            background: #0ea5e9;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-icon {
+            background: #10b981;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+        
+        .step-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+        
+        .tip-box {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .tip-title {
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .tip-content {
+            font-size: 0.875rem;
+            color: #0369a1;
+            line-height: 1.4;
+        }
+        
+        /* Pe mobil, ajustări de poziționare */
+        @media (max-width: 767px) {
+            .connection-status {
+                top: 70px;
+                right: 10px;
+                padding: 0.4rem;
+            }
+            
+            .christmas-tree {
+                font-size: 20px;
+            }
+            
+            .light {
+                width: 6px;
+                height: 6px;
+            }
+            
+            .modal {
+                width: 95vw;
+            }
+            
+            #left-controls, #right-controls {
+                bottom: 10px;
+            }
+            
+            #left-controls {
+                left: 10px;
+            }
+            
+            #right-controls {
+                right: 10px;
+            }
+
+            .custom-tooltip {
+                max-width: 250px;
+                padding: 10px;
+            }
+
+            .visited-marker::before {
+                top: -6px;
+                right: -6px;
+                font-size: 14px;
+                width: 18px;
+                height: 18px;
+            }
+
+            #header-content {
+                gap: 0.25rem;
+            }
+
+            #pin-count, #info-btn {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+        
+        /* Pe desktop */
+        @media (min-width: 768px) {
+            #header p {
+                display: block;
+            }
+            
+            #header {
+                padding: 1rem;
+            }
+            
+            #header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .connection-status {
+                top: 100px;
+                right: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div id="header-content">
+            <div id="header-title">
+                <span style="font-size: 1.5rem;">📍</span>
+                <div>
+                    <h1>Colindători Bine Veniți 🎄</h1>
+                    <p>Cartier Tineri, Buftea - Adaugă casa ta pe hartă!</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button id="info-btn" title="Instrucțiuni de utilizare">
+                    ❓ Info
+                </button>
+                <div id="pin-count" title="Click pentru lista caselor">
+                    <span id="pin-count-text">0 case</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <!-- BUTOANE STANGA -->
+        <div id="left-controls">
+            <button id="center-btn" title="Centrare hartă pe Cartierul Tineri">
+                🏠
+            </button>
+            <button id="gps-btn" title="Folosește locația ta actuală">
+                📍
+            </button>
+        </div>
+        
+        <!-- BUTOANE DREAPTA -->
+        <div id="right-controls">
+            <button id="share-btn-right" title="Share pe WhatsApp">
+                📱
+            </button>
+            <button id="add-btn-right" title="Adaugă casă">
+                +
+            </button>
+        </div>
+        
+        <!-- Brad animat pentru status conexiune -->
+        <div id="connection-status" class="connection-status">
+            <div class="christmas-tree">
+                <div class="tree-top">🎄</div>
+                <div class="lights">
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overlay pentru modale -->
+        <div id="modal-overlay" class="modal-overlay hidden"></div>
+        
+        <!-- Modal Info/Help CORECTAT -->
+        <div id="info-modal" class="modal modal-info hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">❓</span>
+                    Instrucțiuni de utilizare
+                </h3>
+                <button class="close-btn" onclick="closeInfoModal()">×</button>
+            </div>
+            
+            <div class="info-content">
+                <!-- Secțiunea cu numele la început -->
+                <div style="text-align: center; padding: 1rem; background: #f0f9ff; border-radius: 0.75rem; margin-bottom: 1.5rem;">
+                    <p style="font-weight: 600; color: #0369a1; margin-bottom: 0.5rem;">
+                        🎄 <strong>Proiect gratuit</strong> realizat de <strong>Alex Chiriac</strong>
+                    </p>
+                    <p style="font-size: 0.75rem; color: #6b7280;">
+                        © 2025 Colindători Bine Veniți - Cartier Tineri Buftea
+                    </p>
+                </div>
+
+                <div class="info-section">
+                    <h4 class="info-title">🎯 Cum adaugi casa ta:</h4>
+                    <ol class="info-steps">
+                        <li class="info-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-title">Selectează locația</div>
+                                <div class="step-description">Click pe hartă în fața casei tale sau folosește butonul 📍 GPS</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-title">Completează formularul</div>
+                                <div class="step-description">Apasă butonul "+" și completează detaliile casei tale</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-title">Gata!</div>
+                                <div class="step-description">Casa ta va apărea pe hartă pentru colindători</div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                
+                <div class="info-section">
+                    <h4 class="info-title">🎄 Cum colinzi:</h4>
+                    <ol class="info-steps">
+                        <li class="info-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-title">Vezi casele disponibile</div>
+                                <div class="step-description">Casele cu emoji-uri pe hartă primesc colindători</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-title">Marchează vizitată</div>
+                                <div class="step-description">Click simplu pe o casă pentru a o marca ca vizitată</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-title">Șterge casa (dacă e necesar)</div>
+                                <div class="step-description">Dublu-click pe o casă pentru a o șterge (cu parolă)</div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="info-section">
+                    <h4 class="info-title">🎛️ Butoane și funcționalități:</h4>
+                    <ol class="info-steps">
+                        <li class="info-step">
+                            <div class="step-icon">🏠</div>
+                            <div class="step-content">
+                                <div class="step-title">Centrare hartă</div>
+                                <div class="step-description">Butonul 🏠 recentrează harta pe întregul Cartier Tineri</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">📍</div>
+                            <div class="step-content">
+                                <div class="step-title">Locația ta</div>
+                                <div class="step-description">Butonul 📍 folosește GPS-ul pentru a te poziționa pe hartă</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">📋</div>
+                            <div class="step-content">
+                                <div class="step-title">Lista caselor</div>
+                                <div class="step-description">Apasă pe numărul de case (colț stânga) pentru listă ordonată pe străzi</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">🔄</div>
+                            <div class="step-content">
+                                <div class="step-title">Reset vizite</div>
+                                <div class="step-description">Butonul "Reset Vizite" șterge toate marcajele de case vizitate</div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                
+                <div class="tip-box">
+                    <div class="tip-title">💡 Sfaturi utile:</div>
+                    <div class="tip-content">
+                        • Poți seta o parolă când adaugi casa pentru a o putea șterge mai târziu<br>
+                        • Casele marcate cu ✅ au fost deja colindate<br>
+                        • Share-uiește harta cu prietenii folosind butonul 📱<br>
+                        • Zona activă este delimitată cu roșu pe hartă
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal adaugare -->
+        <div id="add-modal" class="modal modal-add hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">+</span>
+                    Adaugă Casa Ta
+                </h3>
+                <button class="close-btn" onclick="closeAddModal()">×</button>
+            </div>
+            
+            <div id="location-success" class="success-box hidden">
+                <p class="success-text">✓ Locație selectată</p>
+                <p class="hint-text">Click pe hartă sau folosește GPS pentru a schimba locația</p>
+            </div>
+            
+            <div id="error-message" class="error-box hidden">
+                <div style="display: flex; gap: 0.5rem;">
+                    <span style="font-size: 1.25rem;">❌</span>
+                    <div style="flex: 1;">
+                        <p class="error-text" style="font-weight: 600; margin-bottom: 0.25rem;">Eroare</p>
+                        <p class="error-text" id="error-text" style="white-space: pre-line;"></p>
+                    </div>
+                </div>
+                <button onclick="closeError()" style="margin-top: 0.5rem; font-size: 0.75rem; color: #991b1b; background: none; border: none; cursor: pointer; font-weight: 500;">
+                    Închide
+                </button>
+            </div>
+            
+            <form id="add-form" onsubmit="handleSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label">Alege iconița ta de Crăciun 🎅</label>
+                    <div class="icon-grid" id="icon-grid"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">👤 Nume Familie *</label>
+                    <input type="text" class="form-input" id="name" placeholder="Numele familiei" maxlength="50" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">🏠 Strada *</label>
+                    <div id="street-container">
+                        <!-- Aici va fi adăugat input-ul cu datalist -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Număr Poștal *</label>
+                    <input type="text" class="form-input" id="streetNumber" placeholder="Număr poștal" maxlength="10" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">🕐 Program preferat</label>
+                    <input type="text" class="form-input" id="schedule" placeholder="Ex: 24 dec, 18:00-21:00" maxlength="50">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Detalii suplimentare</label>
+                    <textarea class="form-textarea" id="notes" rows="3" placeholder="Ex: Sunați la interfon, poartă verde" maxlength="200"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Parolă pentru ștergere (opțional)</label>
+                    <input type="password" class="form-input" id="password" placeholder="Setează o parolă" maxlength="20">
+                    <p class="hint-text">💡 Doar tu vei putea șterge pin-ul cu această parolă</p>
+                </div>
+                
+                <div class="submit-btn-container">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Adaugă pe Hartă
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Modal vizualizare -->
+        <div id="view-modal" class="modal modal-view hidden">
+            <div id="view-content"></div>
+            <div id="delete-form" class="hidden">
+                <div class="modal-header">
+                    <h3 class="modal-title" style="color: #dc2626;">Șterge Pin</h3>
+                    <button class="close-btn" onclick="closeDeleteForm()">×</button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Introdu parola:</label>
+                    <input type="password" class="form-input" id="delete-password" placeholder="Parola de ștergere" required>
+                    <p class="hint-text">💡 Introdu parola ta dacă ai setat-o, sau cere adminului</p>
+                </div>
+                
+                <div class="action-buttons">
+                    <button onclick="confirmDelete()" class="btn btn-danger" style="flex: 1;">
+                        Șterge Pin
+                    </button>
+                    <button onclick="closeDeleteForm()" class="btn btn-secondary" style="flex: 1;">
+                        Anulează
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal lista case -->
+        <div id="list-modal" class="modal modal-list hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">📋</span>
+                    Lista Caselor
+                </h3>
+                <button class="close-btn" onclick="closeListModal()">×</button>
+            </div>
+            
+            <div class="admin-controls" id="admin-controls">
+                <div class="admin-title">
+                    <span>🔧</span>
+                    Control Admin
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button onclick="showAdminLogin()" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;">
+                        Login Admin
+                    </button>
+                    <button onclick="resetAllVisited()" class="btn btn-danger" style="font-size: 0.75rem; padding: 0.5rem 1rem;" id="reset-btn">
+                        Reset Vizite
+                    </button>
+                </div>
+            </div>
+            
+            <div class="list-container" id="list-container">
+                <!-- Aici se vor afișa casele -->
+            </div>
+        </div>
+        
+        <!-- Modal login admin -->
+        <div id="admin-login-modal" class="modal modal-view hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">🔧</span>
+                    Login Admin
+                </h3>
+                <button class="close-btn" onclick="closeAdminLogin()">×</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Parolă Admin:</label>
+                <input type="password" class="form-input" id="admin-password" placeholder="Introdu parola de admin" required>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="verifyAdmin()" class="btn btn-primary" style="flex: 1;">
+                    Login
+                </button>
+                <button onclick="closeAdminLogin()" class="btn btn-secondary" style="flex: 1;">
+                    Anulează
+                </button>
+            </div>
+        </div>
+        
+        <!-- Modal de confirmare ștergere -->
+        <div id="delete-confirm-modal" class="modal delete-confirm-modal hidden">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #dc2626;">
+                    <span style="font-size: 1.5rem;">🗑️</span>
+                    Confirmă Ștergerea
+                </h3>
+                <button class="close-btn" onclick="closeDeleteConfirmModal()">×</button>
+            </div>
+            
+            <div class="form-group">
+                <p>Ești sigur că vrei să ștergi această casă?</p>
+                <p class="hint-text" id="delete-house-info"></p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Introdu parola:</label>
+                <input type="password" class="form-input" id="delete-confirm-password" placeholder="Parola de ștergere" required>
+                <p class="hint-text">💡 Introdu parola ta dacă ai setat-o, sau parola de admin</p>
+            </div>
+            
+            <div class="delete-actions">
+                <button onclick="confirmPinDelete()" class="btn btn-danger" style="flex: 1;">
+                    Șterge
+                </button>
+                <button onclick="closeDeleteConfirmModal()" class="btn btn-secondary" style="flex: 1;">
+                    Anulează
+                </button>
+            </div>
+        </div>
+        
+        <div id="loading">
+            <div style="text-align: center;">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; color: #6b7280; font-weight: 500;">Se încarcă harta...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configurație Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4j5pOuXalnS-TErmivkJEa-4ki5e_x6s",
+            authDomain: "colindatori-buftea.firebaseapp.com",
+            databaseURL: "https://colindatori-buftea-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "colindatori-buftea",
+            storageBucket: "colindatori-buftea.firebasestorage.app",
+            messagingSenderId: "386078081254",
+            appId: "1:386078081254:web:8625f492e1a110fa257b27"
+        };
+        
+        const ADMIN_PASSWORD = 'colind2025';
+        const ICONS = ['🎄', '🎅', '⭐', '🔔', '🎁', '❄️', '🕯️', '🦌', '🧦', '🍪', '🤶', '✨'];
+        
+        // STRĂZI CORECTATE
+        const PREDEFINED_STREETS = [
+            "Catinei", "Ciocarliei", "Codrului", "Dafinului", "Dropiei", 
+            "Frasinului", "Gutuiului", "Lujerului", "Macesului", "Magnoliei",
+            "Mesteacanului", "Nuferilor", "Porumbacului", "Salviei", "Salciei",
+            "Trestiei", "Trifoiului", "Ulmului"
+        ].sort();
+        
+        const ZONE_BOUNDS = [
+            [44.548509, 25.932824], [44.545532, 25.927008],  
+            [44.542515, 25.930210], [44.545553, 25.935854]
+        ];
+        
+        // Calculăm bounds pentru întreaga zonă pentru zoom optim
+        const ZONE_BOUNDS_LATLNG = ZONE_BOUNDS.map(coord => [coord[0], coord[1]]);
+        const ZONE_CENTER = [44.545593, 25.931531];
+        
+        let map;
+        let markers = [];
+        let pins = [];
+        let selectedIcon = '🎄';
+        let clickedLocation = null;
+        let selectedPin = null;
+        let isConnected = false;
+        let userLocationMarker = null;
+        let zonePolygon = null;
+        let isAdmin = false;
+        let visitedHouses = JSON.parse(localStorage.getItem('visitedHouses') || '{}');
+        let lastClickTime = 0;
+        let clickTimer = null;
+        
+        document.addEventListener('DOMContentLoaded', init);
+        
+        function init() {
+            initMap();
+            initIconGrid();
+            initStreetInput();
+            setupEventListeners();
+            
+            setTimeout(() => {
+                initFirebase();
+            }, 500);
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('add-btn-right').addEventListener('click', openAddModal);
+            document.getElementById('gps-btn').addEventListener('click', getUserLocation);
+            document.getElementById('center-btn').addEventListener('click', centerToCartier);
+            document.getElementById('share-btn-right').addEventListener('click', shareOnWhatsApp);
+            document.getElementById('pin-count').addEventListener('click', showListModal);
+            document.getElementById('info-btn').addEventListener('click', showInfoModal);
+            document.getElementById('modal-overlay').addEventListener('click', closeAllModals);
+        }
+        
+        function showInfoModal() {
+            showModal('info-modal');
+        }
+        
+        function closeInfoModal() {
+            hideModal('info-modal');
+        }
+        
+        function shareOnWhatsApp() {
+            const text = '🎄 Colindatori Bine Veniti! 🎅\n\nHarta caselor care primesc colindatori.\nAdauga si casa ta: ' + window.location.href;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Colindatori Buftea',
+                    text: text
+                });
+            } else {
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                window.open(whatsappUrl, '_blank');
+            }
+        }
+        
+        function centerToCartier() {
+            // Folosim fitBounds pentru a afișa întreaga zonă
+            map.fitBounds(ZONE_BOUNDS_LATLNG, { padding: [20, 20] });
+        }
+        
+        function isInZone(lat, lng) {
+            let inside = false;
+            for (let i = 0, j = ZONE_BOUNDS.length - 1; i < ZONE_BOUNDS.length; j = i++) {
+                const xi = ZONE_BOUNDS[i][1], yi = ZONE_BOUNDS[i][0];
+                const xj = ZONE_BOUNDS[j][1], yj = ZONE_BOUNDS[j][0];
+                
+                const intersect = ((yi > lat) !== (yj > lat)) &&
+                    (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+        
+        function initMap() {
+            map = L.map('map');
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Setăm view-ul inițial să afișeze întreaga zonă
+            map.fitBounds(ZONE_BOUNDS_LATLNG, { padding: [20, 20] });
+            
+            // Adaugă poligonul zonei
+            zonePolygon = L.polygon(ZONE_BOUNDS, {
+                color: '#dc2626',
+                weight: 3,
+                fillColor: '#fecaca',
+                fillOpacity: 0.2,
+                opacity: 0.8
+            }).addTo(map);
+            
+            zonePolygon.bindTooltip('🎄 Cartierul Tineri - Zona Colindători', {
+                permanent: false,
+                direction: 'center',
+                className: 'zone-tooltip'
+            });
+            
+            map.on('click', (e) => {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                
+                if (!isInZone(lat, lng)) {
+                    showError('❌ Poți adăuga doar case din Cartierul Tineri!\n\nSelectează o locație în interiorul zonei marcate cu roșu.');
+                    return;
+                }
+                
+                clickedLocation = { lat, lng };
+                
+                if (window.tempMarker) {
+                    window.tempMarker.remove();
+                }
+                
+                window.tempMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));">📍</div>',
+                        className: 'temp-marker',
+                        iconSize: [48, 48],
+                        iconAnchor: [24, 48]
+                    })
+                }).addTo(map);
+                
+                if (!document.getElementById('add-modal').classList.contains('hidden')) {
+                    document.getElementById('location-success').classList.remove('hidden');
+                }
+            });
+            
+            setTimeout(() => {
+                map.invalidateSize();
+                document.getElementById('loading').classList.add('hidden');
+            }, 300);
+            
+            window.addEventListener('resize', () => {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            });
+        }
+        
+        function initIconGrid() {
+            const grid = document.getElementById('icon-grid');
+            grid.innerHTML = '';
+            ICONS.forEach(icon => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'icon-btn';
+                btn.textContent = icon;
+                btn.onclick = () => selectIcon(icon);
+                if (icon === selectedIcon) btn.classList.add('selected');
+                grid.appendChild(btn);
+            });
+        }
+        
+        function initStreetInput() {
+            const container = document.getElementById('street-container');
+            container.innerHTML = '';
+            
+            const datalist = document.createElement('datalist');
+            datalist.id = 'streets-list';
+            
+            PREDEFINED_STREETS.forEach(street => {
+                const option = document.createElement('option');
+                option.value = street;
+                datalist.appendChild(option);
+            });
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'street-input';
+            input.id = 'address';
+            input.placeholder = 'Începe să tastezi numele străzii...';
+            input.setAttribute('list', 'streets-list');
+            input.required = true;
+            input.autocomplete = 'off';
+            
+            input.addEventListener('change', function() {
+                validateStreetInput(this);
+            });
+            
+            container.appendChild(input);
+            container.appendChild(datalist);
+        }
+        
+        function validateStreetInput(inputElement) {
+            const value = inputElement.value.trim();
+            if (value && !PREDEFINED_STREETS.includes(value)) {
+                // Mesaj eliminat
+            }
+        }
+        
+        function selectIcon(icon) {
+            selectedIcon = icon;
+            document.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.textContent === icon);
+            });
+        }
+        
+        function initFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                
+                const database = firebase.database();
+                
+                const connectedRef = database.ref(".info/connected");
+                connectedRef.on("value", function(snap) {
+                    isConnected = snap.val() === true;
+                    updateConnectionStatus();
+                    
+                    if (isConnected) {
+                        loadPins();
+                    }
+                });
+                
+            } catch (error) {
+                loadDemoData();
+            }
+        }
+        
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-status');
+            
+            if (isConnected) {
+                statusElement.className = 'connection-status connected';
+            } else {
+                statusElement.className = 'connection-status disconnected';
+            }
+        }
+        
+        function loadPins() {
+            try {
+                const database = firebase.database();
+                database.ref('pins').on('value', (snapshot) => {
+                    pins = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach((child) => {
+                            pins.push({ id: child.key, ...child.val() });
+                        });
+                    }
+                    updateMap();
+                    updatePinCount();
+                }, (error) => {
+                    loadDemoData();
+                });
+            } catch (error) {
+                loadDemoData();
+            }
+        }
+        
+        function loadDemoData() {
+            pins = [
+                {
+                    id: 'demo1',
+                    name: 'Familie Popescu',
+                    address: 'Salviei',
+                    streetNumber: '15',
+                    icon: '🎄',
+                    lat: 44.545593,
+                    lng: 25.931531,
+                    schedule: '24 dec, 18:00-21:00',
+                    notes: 'Sunați la interfon'
+                }
+            ];
+            updateMap();
+            updatePinCount();
+        }
+        
+        function updateMap() {
+            markers.forEach(marker => marker.remove());
+            markers = [];
+            
+            if (pins.length === 0) {
+                return;
+            }
+            
+            pins.forEach(pin => {
+                const isVisited = visitedHouses[pin.id];
+                const icon = pin.icon || '🎄';
+                
+                const marker = L.marker([pin.lat, pin.lng], {
+                    icon: L.divIcon({
+                        html: `
+                            <div class="${isVisited ? 'visited-marker' : ''}" style="font-size: 42px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); transform: translateY(-5px); position: relative;">
+                                ${icon}
+                            </div>
+                        `,
+                        className: 'custom-marker',
+                        iconSize: [42, 42],
+                        iconAnchor: [21, 42]
+                    })
+                }).addTo(map);
+                
+                // Tooltip simplu fără instrucțiuni repetitive
+                let tooltipContent = `
+                    <div class="custom-tooltip">
+                        <div class="tooltip-family">
+                            ${isVisited ? '✅ ' : ''}${pin.icon || '🎄'} ${pin.name}
+                        </div>
+                        <div class="tooltip-address">
+                            📍 Str. ${pin.address}, Nr. ${pin.streetNumber}
+                        </div>
+                `;
+                
+                if (pin.schedule) {
+                    tooltipContent += `
+                        <div class="tooltip-schedule">
+                            🕐 ${pin.schedule}
+                        </div>
+                    `;
+                }
+                
+                if (pin.notes) {
+                    tooltipContent += `
+                        <div class="tooltip-notes">
+                            📝 ${pin.notes}
+                        </div>
+                    `;
+                }
+                
+                tooltipContent += `</div>`;
+                
+                marker.bindTooltip(tooltipContent, {
+                    direction: 'top',
+                    offset: [0, -40],
+                    opacity: 0.95,
+                    className: 'custom-tooltip-container'
+                });
+                
+                // Sistem dublu-click pentru ștergere
+                marker.on('click', (e) => {
+                    const currentTime = new Date().getTime();
+                    const timeDiff = currentTime - lastClickTime;
+                    
+                    if (timeDiff < 300 && timeDiff > 0) {
+                        // Dublu-click detectat - arată modal de ștergere
+                        clearTimeout(clickTimer);
+                        showDeleteModalForPin(pin);
+                    } else {
+                        // Click simplu - marchează vizitată
+                        clickTimer = setTimeout(() => {
+                            toggleVisited(pin.id);
+                        }, 300);
+                    }
+                    
+                    lastClickTime = currentTime;
+                });
+                
+                markers.push(marker);
+            });
+        }
+        
+        function showDeleteModalForPin(pin) {
+            selectedPin = pin;
+            document.getElementById('delete-house-info').textContent = 
+                `${pin.icon || '🎄'} ${pin.name} - Str. ${pin.address}, Nr. ${pin.streetNumber}`;
+            document.getElementById('delete-confirm-password').value = '';
+            showModal('delete-confirm-modal');
+        }
+        
+        function closeDeleteConfirmModal() {
+            hideModal('delete-confirm-modal');
+            selectedPin = null;
+        }
+        
+        function confirmPinDelete() {
+            if (!selectedPin) return;
+            
+            const password = document.getElementById('delete-confirm-password').value;
+            
+            if (!password) {
+                return;
+            }
+            
+            const isAdminUser = password === ADMIN_PASSWORD;
+            const isOwner = selectedPin.password && password === selectedPin.password;
+            
+            if (!isAdminUser && !isOwner) {
+                document.getElementById('delete-confirm-password').value = '';
+                return;
+            }
+            
+            try {
+                const database = firebase.database();
+                database.ref('pins/' + selectedPin.id).remove()
+                    .then(() => {
+                        closeDeleteConfirmModal();
+                    })
+                    .catch((error) => {
+                    });
+            } catch (error) {
+            }
+        }
+        
+        function updatePinCount() {
+            const count = pins.length;
+            const visitedCount = Object.keys(visitedHouses).length;
+            const text = count === 1 ? 'casă' : 'case';
+            const visitedText = visitedCount > 0 ? ` (${visitedCount} vizitate)` : '';
+            document.getElementById('pin-count-text').textContent = `${count} ${text}${visitedText}`;
+        }
+        
+        function showError(message) {
+            document.getElementById('error-text').textContent = message;
+            document.getElementById('error-message').classList.remove('hidden');
+        }
+        
+        function closeError() {
+            document.getElementById('error-message').classList.add('hidden');
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        function openAddModal() {
+            if (!clickedLocation) {
+                showError('Te rog selectează mai întâi o locație pe hartă sau folosește butonul GPS!');
+                return;
+            }
+            showModal('add-modal');
+            initStreetInput();
+        }
+        
+        function closeAddModal() {
+            hideModal('add-modal');
+            document.getElementById('add-form').reset();
+            document.getElementById('error-message').classList.add('hidden');
+            clickedLocation = null;
+            selectedIcon = '🎄';
+            initIconGrid();
+            initStreetInput();
+            
+            if (window.tempMarker) {
+                window.tempMarker.remove();
+                window.tempMarker = null;
+            }
+        }
+        
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById('modal-overlay').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        
+        function closeAllModals() {
+            hideModal('add-modal');
+            hideModal('view-modal');
+            hideModal('list-modal');
+            hideModal('admin-login-modal');
+            hideModal('delete-confirm-modal');
+            hideModal('info-modal');
+        }
+        
+        function toggleVisited(houseId) {
+            if (visitedHouses[houseId]) {
+                delete visitedHouses[houseId];
+            } else {
+                visitedHouses[houseId] = true;
+            }
+            
+            localStorage.setItem('visitedHouses', JSON.stringify(visitedHouses));
+            updateMap();
+            updatePinCount();
+            
+            if (!document.getElementById('list-modal').classList.contains('hidden')) {
+                showListModal();
+            }
+        }
+        
+        function resetAllVisited() {
+            visitedHouses = {};
+            localStorage.setItem('visitedHouses', JSON.stringify(visitedHouses));
+            updateMap();
+            updatePinCount();
+            
+            if (!document.getElementById('list-modal').classList.contains('hidden')) {
+                showListModal();
+            }
+        }
+        
+        function showAdminLogin() {
+            showModal('admin-login-modal');
+        }
+        
+        function closeAdminLogin() {
+            hideModal('admin-login-modal');
+            document.getElementById('admin-password').value = '';
+        }
+        
+        function verifyAdmin() {
+            const password = document.getElementById('admin-password').value;
+            
+            if (password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                closeAdminLogin();
+                updateMap();
+                
+                if (!document.getElementById('list-modal').classList.contains('hidden')) {
+                    showListModal();
+                }
+            }
+        }
+        
+        function showListModal() {
+            if (pins.length === 0) {
+                return;
+            }
+            
+            // Sortare corectă numerică pentru numerele poștale
+            const sortedPins = [...pins].sort((a, b) => {
+                const streetCompare = a.address.localeCompare(b.address);
+                if (streetCompare !== 0) return streetCompare;
+                
+                // Extrage numerele din string-ul streetNumber pentru sortare numerică
+                const numA = parseInt(a.streetNumber.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.streetNumber.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+            
+            const listContainer = document.getElementById('list-container');
+            listContainer.innerHTML = '';
+            
+            sortedPins.forEach(pin => {
+                const isVisited = visitedHouses[pin.id];
+                const listItem = document.createElement('div');
+                listItem.className = `list-item ${isVisited ? 'visited' : ''}`;
+                
+                const adminControls = `
+                    <div class="checkbox-container">
+                        <div class="checkbox ${isVisited ? 'checked' : ''}" onclick="toggleVisited('${pin.id}')"></div>
+                        <span class="checkbox-label" onclick="toggleVisited('${pin.id}')">Am colindat aici</span>
+                    </div>
+                    <button class="delete-btn" onclick="showDeleteModalForPinFromList('${pin.id}')" style="margin-top: 8px; font-size: 11px; padding: 4px 8px;">
+                        🗑️ Șterge
+                    </button>
+                `;
+                
+                listItem.innerHTML = `
+                    <div class="list-icon">${isVisited ? '✅' : (pin.icon || '🎄')}</div>
+                    <div class="list-details">
+                        <div class="list-family">${pin.name} ${isVisited ? '<span style="color: #059669; font-size: 12px;">(Vizitată)</span>' : ''}</div>
+                        <div class="list-address">Str. ${pin.address}, Nr. ${pin.streetNumber}</div>
+                        ${pin.schedule ? `<div class="list-schedule">🕐 ${pin.schedule}</div>` : ''}
+                        ${pin.notes ? `<div class="list-notes">📝 ${pin.notes}</div>` : ''}
+                        ${adminControls}
+                    </div>
+                `;
+                listContainer.appendChild(listItem);
+            });
+            
+            showModal('list-modal');
+        }
+        
+        function showDeleteModalForPinFromList(houseId) {
+            const pin = pins.find(p => p.id === houseId);
+            if (pin) {
+                showDeleteModalForPin(pin);
+            }
+        }
+        
+        function closeListModal() {
+            hideModal('list-modal');
+        }
+        
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            closeError();
+            
+            const name = document.getElementById('name').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const streetNumber = document.getElementById('streetNumber').value.trim();
+            
+            const missingFields = [];
+            if (!name) missingFields.push('Nume Familie');
+            if (!address) missingFields.push('Stradă');
+            if (!streetNumber) missingFields.push('Număr Poștal');
+            
+            if (missingFields.length > 0) {
+                showError('Te rog completează următoarele câmpuri obligatorii:\n\n• ' + missingFields.join('\n• '));
+                return;
+            }
+            
+            if (!clickedLocation) {
+                showError('Te rog selectează o locație pe hartă sau folosește GPS-ul!');
+                return;
+            }
+            
+            if (!isInZone(clickedLocation.lat, clickedLocation.lng)) {
+                showError('❌ Poți adăuga doar case din Cartierul Tineri!\n\nSelectează o locație în interiorul zonei marcate cu roșu.');
+                return;
+            }
+            
+            if (!isConnected) {
+                showError('Nu ești conectat la internet. Te rog verifică conexiunea și încearcă din nou.');
+                return;
+            }
+            
+            const pinData = {
+                name,
+                address,
+                streetNumber,
+                schedule: document.getElementById('schedule').value,
+                notes: document.getElementById('notes').value,
+                icon: selectedIcon,
+                password: document.getElementById('password').value,
+                lat: clickedLocation.lat,
+                lng: clickedLocation.lng,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                const database = firebase.database();
+                database.ref('pins').push(pinData)
+                    .then(() => {
+                        closeAddModal();
+                        
+                        if (window.tempMarker) {
+                            window.tempMarker.remove();
+                            window.tempMarker = null;
+                        }
+                    })
+                    .catch((error) => {
+                        showError('Eroare la salvare: ' + error.message);
+                    });
+            } catch (error) {
+                showError('Eroare la salvare: ' + error.message);
+            }
+        }
+        
+        function getUserLocation() {
+            const gpsBtn = document.getElementById('gps-btn');
+            gpsBtn.disabled = true;
+            gpsBtn.classList.add('loading');
+            gpsBtn.innerHTML = '⏳';
+            
+            if (!navigator.geolocation) {
+                resetGpsButton();
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+                    
+                    if (!isInZone(lat, lng)) {
+                        resetGpsButton();
+                        showError('❌ Locația ta nu este în Cartierul Tineri!\n\nTe rog folosește click pe hartă pentru a selecta o locație în zonă.');
+                        return;
+                    }
+                    
+                    clickedLocation = { lat, lng };
+                    
+                    if (userLocationMarker) {
+                        userLocationMarker.remove();
+                    }
+                    
+                    userLocationMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); color: #3b82f6;">📍</div>',
+                            className: 'user-location-marker',
+                            iconSize: [48, 48],
+                            iconAnchor: [24, 48]
+                        })
+                    }).addTo(map);
+                    
+                    map.setView([lat, lng], 17);
+                    
+                    gpsBtn.innerHTML = '📍';
+                    setTimeout(resetGpsButton, 2000);
+                    
+                    if (!document.getElementById('add-modal').classList.contains('hidden')) {
+                        document.getElementById('location-success').classList.remove('hidden');
+                    }
+                },
+                function(error) {
+                    resetGpsButton();
+                    showError('❌ Nu s-a putut obține locația ta.\n\nTe rog folosește click pe hartă pentru a selecta manual o locație.');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+        
+        function resetGpsButton() {
+            const gpsBtn = document.getElementById('gps-btn');
+            gpsBtn.disabled = false;
+            gpsBtn.classList.remove('loading');
+            gpsBtn.innerHTML = '📍';
+        }
+    </script>
+</body>
+</html>
