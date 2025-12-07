@@ -377,7 +377,7 @@
             margin-bottom: 0.5rem;
         }
         
-        .form-input, .form-textarea, .form-select {
+        .form-input, .form-textarea {
             width: 100%;
             padding: 0.75rem;
             border: 2px solid #e5e7eb;
@@ -387,15 +387,20 @@
             background: #f9fafb;
         }
         
-        .form-input:focus, .form-textarea:focus, .form-select:focus {
+        .form-input:focus, .form-textarea:focus {
             outline: none;
             border-color: #dc2626;
             background: white;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
         
-        /* STIL SPECIAL PENTRU DROPDOWN STREET - ÎMBUNĂTĂȚIT */
-        .street-select {
+        /* STILURI DROPDOWN CUSTOM */
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        
+        .dropdown-selected {
             width: 100%;
             padding: 0.75rem;
             border: 2px solid #e5e7eb;
@@ -403,32 +408,72 @@
             font-size: 1rem;
             font-family: inherit;
             background: #f9fafb;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 1em;
-            padding-right: 2.5rem;
-            height: 48px;
-            line-height: 1.5;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .street-select:focus {
+        .dropdown-selected:hover {
+            border-color: #d1d5db;
+        }
+        
+        .dropdown-selected:focus {
             outline: none;
             border-color: #dc2626;
             background: white;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
         
-        /* Pentru mobil - asigură că dropdown-ul rămâne compact */
-        @media (max-width: 767px) {
-            .street-select {
-                font-size: 16px; /* Previne zoom-ul pe iOS */
-                height: 48px;
-                max-height: 48px;
-            }
+        .dropdown-arrow {
+            transition: transform 0.2s;
+            color: #6b7280;
+        }
+        
+        .dropdown-selected.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .dropdown-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .dropdown-options.show {
+            display: block;
+        }
+        
+        .dropdown-option {
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .dropdown-option:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-option:hover {
+            background: #f3f4f6;
+        }
+        
+        .dropdown-option.selected {
+            background: #fee2e2;
+            color: #dc2626;
+            font-weight: 500;
         }
         
         .icon-grid {
@@ -1099,9 +1144,14 @@
                 padding: 0.3rem 0.6rem;
             }
             
-            .street-select {
+            /* Pe mobil - dropdown mai mare pentru touch */
+            .dropdown-selected {
+                padding: 1rem;
                 font-size: 16px;
-                height: 48px;
+            }
+            
+            .dropdown-option {
+                padding: 1rem;
             }
         }
         
@@ -1122,6 +1172,11 @@
             .connection-status {
                 top: 100px;
                 right: 30px;
+            }
+            
+            /* Pe desktop - dropdown cu înălțime limitată */
+            .dropdown-options {
+                max-height: 200px;
             }
         }
     </style>
@@ -1350,8 +1405,8 @@
                 
                 <div class="form-group">
                     <label class="form-label">🏠 Strada *</label>
-                    <div id="street-container">
-                        <!-- Aici va fi adăugat dropdown-ul normal -->
+                    <div id="street-container" class="custom-dropdown">
+                        <!-- Aici va fi adăugat dropdown-ul custom -->
                     </div>
                 </div>
                 
@@ -1530,12 +1585,10 @@
         
         // Coordonatele corectate
         const ZONE_BOUNDS = [
-            [44.548509, 25.932824], // NV - punctul nou
-            [44.545532, 25.927008], // SV
-            [44.542431, 25.930401], // SE
-            [44.545553, 25.935854]  // NE
-
-        ];
+            [44.542447744856304, 25.930412478772617],  // NV
+            [44.545491313185565, 25.92708672616722],   // SV
+            [44.548473322664314, 25.932998314763513],  // SE
+            [44.54536132468988, 25.935616150744917]    // NE
         ];
         
         // Calculăm bounds pentru întreaga zonă pentru zoom optim
@@ -1555,13 +1608,14 @@
         let visitedHouses = JSON.parse(localStorage.getItem('visitedHouses') || '{}');
         let lastClickTime = 0;
         let clickTimer = null;
+        let currentDropdown = null;
         
         document.addEventListener('DOMContentLoaded', init);
         
         function init() {
             initMap();
             initIconGrid();
-            initStreetInput();
+            initStreetDropdown();
             setupEventListeners();
             
             setTimeout(() => {
@@ -1577,6 +1631,104 @@
             document.getElementById('pin-count').addEventListener('click', showListModal);
             document.getElementById('info-btn').addEventListener('click', showInfoModal);
             document.getElementById('modal-overlay').addEventListener('click', closeAllModals);
+            
+            // Închide dropdown când dai click în afara lui
+            document.addEventListener('click', function(event) {
+                if (currentDropdown && !currentDropdown.contains(event.target)) {
+                    closeCurrentDropdown();
+                }
+            });
+        }
+        
+        function initStreetDropdown() {
+            const container = document.getElementById('street-container');
+            container.innerHTML = '';
+            
+            // Creează structura dropdown-ului custom
+            container.innerHTML = `
+                <div class="dropdown-selected" id="street-dropdown-selected">
+                    <span class="dropdown-selected-text">-- Selectează strada --</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+                <div class="dropdown-options" id="street-dropdown-options">
+                    ${PREDEFINED_STREETS.map(street => `
+                        <div class="dropdown-option" data-value="${street}">
+                            ${street}
+                        </div>
+                    `).join('')}
+                </div>
+                <input type="hidden" id="address" name="address" required>
+            `;
+            
+            // Event listeners pentru dropdown
+            const selected = document.getElementById('street-dropdown-selected');
+            const options = document.getElementById('street-dropdown-options');
+            const hiddenInput = document.getElementById('address');
+            
+            selected.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (options.classList.contains('show')) {
+                    closeCurrentDropdown();
+                } else {
+                    openDropdown(options, selected);
+                }
+            });
+            
+            // Pentru fiecare opțiune
+            document.querySelectorAll('#street-dropdown-options .dropdown-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    const text = this.textContent;
+                    
+                    // Update selected display
+                    selected.querySelector('.dropdown-selected-text').textContent = text;
+                    selected.classList.add('open');
+                    
+                    // Update hidden input
+                    hiddenInput.value = value;
+                    
+                    // Mark selected option
+                    document.querySelectorAll('#street-dropdown-options .dropdown-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    
+                    // Close dropdown
+                    closeCurrentDropdown();
+                });
+            });
+            
+            // Închide dropdown la apăsarea tastei Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && currentDropdown) {
+                    closeCurrentDropdown();
+                }
+            });
+        }
+        
+        function openDropdown(optionsElement, selectedElement) {
+            closeCurrentDropdown();
+            
+            selectedElement.classList.add('open');
+            optionsElement.classList.add('show');
+            currentDropdown = optionsElement.parentElement;
+            
+            // Scroll to selected option
+            const selectedOption = optionsElement.querySelector('.dropdown-option.selected');
+            if (selectedOption) {
+                selectedOption.scrollIntoView({ block: 'nearest' });
+            }
+        }
+        
+        function closeCurrentDropdown() {
+            if (currentDropdown) {
+                const selected = currentDropdown.querySelector('.dropdown-selected');
+                const options = currentDropdown.querySelector('.dropdown-options');
+                
+                if (selected) selected.classList.remove('open');
+                if (options) options.classList.remove('show');
+                currentDropdown = null;
+            }
         }
         
         function showInfoModal() {
@@ -1698,35 +1850,6 @@
                 if (icon === selectedIcon) btn.classList.add('selected');
                 grid.appendChild(btn);
             });
-        }
-        
-        function initStreetInput() {
-            const container = document.getElementById('street-container');
-            container.innerHTML = '';
-            
-            const select = document.createElement('select');
-            select.className = 'street-select';
-            select.id = 'address';
-            select.required = true;
-            select.style.height = '48px'; // Înălțime fixă pentru consistență
-            
-            // Adaugă opțiunea default
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = '-- Selectează strada --';
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            select.appendChild(defaultOption);
-            
-            // Adaugă opțiunile pentru străzi
-            PREDEFINED_STREETS.forEach(street => {
-                const option = document.createElement('option');
-                option.value = street;
-                option.textContent = street;
-                select.appendChild(option);
-            });
-            
-            container.appendChild(select);
         }
         
         function selectIcon(icon) {
@@ -1968,7 +2091,7 @@
                 return;
             }
             showModal('add-modal');
-            initStreetInput();
+            initStreetDropdown();
         }
         
         function closeAddModal() {
@@ -1978,7 +2101,8 @@
             clickedLocation = null;
             selectedIcon = '🎄';
             initIconGrid();
-            initStreetInput();
+            initStreetDropdown();
+            closeCurrentDropdown();
             
             if (window.tempMarker) {
                 window.tempMarker.remove();
@@ -2005,6 +2129,7 @@
             hideModal('admin-login-modal');
             hideModal('delete-confirm-modal');
             hideModal('info-modal');
+            closeCurrentDropdown();
         }
         
         function toggleVisited(houseId) {
