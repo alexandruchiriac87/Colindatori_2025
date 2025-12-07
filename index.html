@@ -394,7 +394,7 @@
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
         
-        /* STIL SPECIAL PENTRU DROPDOWN STREET */
+        /* STIL SPECIAL PENTRU DROPDOWN STREET - ÎMBUNĂTĂȚIT */
         .street-select {
             width: 100%;
             padding: 0.75rem;
@@ -411,6 +411,8 @@
             background-position: right 0.75rem center;
             background-size: 1em;
             padding-right: 2.5rem;
+            height: 48px;
+            line-height: 1.5;
         }
         
         .street-select:focus {
@@ -418,6 +420,15 @@
             border-color: #dc2626;
             background: white;
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        /* Pentru mobil - asigură că dropdown-ul rămâne compact */
+        @media (max-width: 767px) {
+            .street-select {
+                font-size: 16px; /* Previne zoom-ul pe iOS */
+                height: 48px;
+                max-height: 48px;
+            }
         }
         
         .icon-grid {
@@ -1088,9 +1099,8 @@
                 padding: 0.3rem 0.6rem;
             }
             
-            /* Pe mobil, asigură că dropdown-ul se vede corect */
             .street-select {
-                font-size: 16px; /* Evită zoom automat pe iOS */
+                font-size: 16px;
                 height: 48px;
             }
         }
@@ -1112,11 +1122,6 @@
             .connection-status {
                 top: 100px;
                 right: 30px;
-            }
-            
-            /* Pe desktop, setează size pentru dropdown */
-            .street-select {
-                font-size: 16px;
             }
         }
     </style>
@@ -1346,7 +1351,7 @@
                 <div class="form-group">
                     <label class="form-label">🏠 Strada *</label>
                     <div id="street-container">
-                        <!-- Aici va fi adăugat dropdown-ul -->
+                        <!-- Aici va fi adăugat dropdown-ul normal -->
                     </div>
                 </div>
                 
@@ -1523,11 +1528,12 @@
             "Trestiei", "Trifoiului", "Ulmului"
         ].sort();
         
-        // Coordonatele actualizate cu punctul NV nou
+        // Coordonatele corectate
         const ZONE_BOUNDS = [
-            [44.548509, 25.932824], [44.545532, 25.927008],  
-            [44.542515, 25.930210], [44.545553, 25.935854],
-            [44.542431, 25.930401]  // Punctul nou NV
+            [44.542431, 25.930401], // NV - punctul nou
+            [44.545532, 25.927008], // SV
+            [44.542515, 25.930210], // SE
+            [44.545553, 25.935854]  // NE
         ];
         
         // Calculăm bounds pentru întreaga zonă pentru zoom optim
@@ -1700,16 +1706,14 @@
             select.className = 'street-select';
             select.id = 'address';
             select.required = true;
-            select.size = 1; // Standard dropdown pe desktop
-            select.style.height = '48px'; // Înălțime consistentă
+            select.style.height = '48px'; // Înălțime fixă pentru consistență
             
             // Adaugă opțiunea default
             const defaultOption = document.createElement('option');
             defaultOption.value = '';
-            defaultOption.textContent = 'Selectează strada...';
+            defaultOption.textContent = '-- Selectează strada --';
             defaultOption.disabled = true;
             defaultOption.selected = true;
-            defaultOption.hidden = true;
             select.appendChild(defaultOption);
             
             // Adaugă opțiunile pentru străzi
@@ -1720,23 +1724,7 @@
                 select.appendChild(option);
             });
             
-            // Pe mobil, setează size la 5 pentru a arăta mai multe opțiuni
-            if (window.innerWidth <= 767) {
-                select.size = 5;
-                select.style.height = 'auto';
-                select.style.maxHeight = '200px';
-                select.style.overflowY = 'auto';
-            }
-            
             container.appendChild(select);
-            
-            // Adaugă un placeholder visibil
-            const placeholder = document.createElement('div');
-            placeholder.style.fontSize = '0.75rem';
-            placeholder.style.color = '#6b7280';
-            placeholder.style.marginTop = '0.25rem';
-            placeholder.textContent = 'Apasă aici pentru a vedea lista de străzi';
-            container.appendChild(placeholder);
         }
         
         function selectIcon(icon) {
@@ -2259,14 +2247,6 @@
             gpsBtn.classList.remove('loading');
             gpsBtn.innerHTML = '📍';
         }
-        
-        // Ascultător pentru redimensionarea ferestrei pentru a ajusta dropdown-ul
-        window.addEventListener('resize', function() {
-            // Reinitializează input-ul de stradă la redimensionare pentru a se adapta
-            if (!document.getElementById('add-modal').classList.contains('hidden')) {
-                initStreetInput();
-            }
-        });
     </script>
 </body>
 </html>
