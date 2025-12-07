@@ -394,7 +394,8 @@
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
         
-        .street-input {
+        /* STIL SPECIAL PENTRU DROPDOWN STREET */
+        .street-select {
             width: 100%;
             padding: 0.75rem;
             border: 2px solid #e5e7eb;
@@ -402,9 +403,17 @@
             font-size: 1rem;
             font-family: inherit;
             background: #f9fafb;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
         }
         
-        .street-input:focus {
+        .street-select:focus {
             outline: none;
             border-color: #dc2626;
             background: white;
@@ -1078,6 +1087,12 @@
                 font-size: 0.75rem;
                 padding: 0.3rem 0.6rem;
             }
+            
+            /* Pe mobil, asigură că dropdown-ul se vede corect */
+            .street-select {
+                font-size: 16px; /* Evită zoom automat pe iOS */
+                height: 48px;
+            }
         }
         
         /* Pe desktop */
@@ -1097,6 +1112,11 @@
             .connection-status {
                 top: 100px;
                 right: 30px;
+            }
+            
+            /* Pe desktop, setează size pentru dropdown */
+            .street-select {
+                font-size: 16px;
             }
         }
     </style>
@@ -1326,7 +1346,7 @@
                 <div class="form-group">
                     <label class="form-label">🏠 Strada *</label>
                     <div id="street-container">
-                        <!-- Aici va fi adăugat input-ul cu datalist -->
+                        <!-- Aici va fi adăugat dropdown-ul -->
                     </div>
                 </div>
                 
@@ -1503,9 +1523,11 @@
             "Trestiei", "Trifoiului", "Ulmului"
         ].sort();
         
+        // Coordonatele actualizate cu punctul NV nou
         const ZONE_BOUNDS = [
             [44.548509, 25.932824], [44.545532, 25.927008],  
-            [44.542515, 25.930210], [44.545553, 25.935854]
+            [44.542515, 25.930210], [44.545553, 25.935854],
+            [44.542431, 25.930401]  // Punctul nou NV
         ];
         
         // Calculăm bounds pentru întreaga zonă pentru zoom optim
@@ -1674,37 +1696,47 @@
             const container = document.getElementById('street-container');
             container.innerHTML = '';
             
-            const datalist = document.createElement('datalist');
-            datalist.id = 'streets-list';
+            const select = document.createElement('select');
+            select.className = 'street-select';
+            select.id = 'address';
+            select.required = true;
+            select.size = 1; // Standard dropdown pe desktop
+            select.style.height = '48px'; // Înălțime consistentă
             
+            // Adaugă opțiunea default
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Selectează strada...';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            defaultOption.hidden = true;
+            select.appendChild(defaultOption);
+            
+            // Adaugă opțiunile pentru străzi
             PREDEFINED_STREETS.forEach(street => {
                 const option = document.createElement('option');
                 option.value = street;
-                datalist.appendChild(option);
+                option.textContent = street;
+                select.appendChild(option);
             });
             
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'street-input';
-            input.id = 'address';
-            input.placeholder = 'Începe să tastezi numele străzii...';
-            input.setAttribute('list', 'streets-list');
-            input.required = true;
-            input.autocomplete = 'off';
-            
-            input.addEventListener('change', function() {
-                validateStreetInput(this);
-            });
-            
-            container.appendChild(input);
-            container.appendChild(datalist);
-        }
-        
-        function validateStreetInput(inputElement) {
-            const value = inputElement.value.trim();
-            if (value && !PREDEFINED_STREETS.includes(value)) {
-                // Mesaj eliminat
+            // Pe mobil, setează size la 5 pentru a arăta mai multe opțiuni
+            if (window.innerWidth <= 767) {
+                select.size = 5;
+                select.style.height = 'auto';
+                select.style.maxHeight = '200px';
+                select.style.overflowY = 'auto';
             }
+            
+            container.appendChild(select);
+            
+            // Adaugă un placeholder visibil
+            const placeholder = document.createElement('div');
+            placeholder.style.fontSize = '0.75rem';
+            placeholder.style.color = '#6b7280';
+            placeholder.style.marginTop = '0.25rem';
+            placeholder.textContent = 'Apasă aici pentru a vedea lista de străzi';
+            container.appendChild(placeholder);
         }
         
         function selectIcon(icon) {
@@ -2227,6 +2259,14 @@
             gpsBtn.classList.remove('loading');
             gpsBtn.innerHTML = '📍';
         }
+        
+        // Ascultător pentru redimensionarea ferestrei pentru a ajusta dropdown-ul
+        window.addEventListener('resize', function() {
+            // Reinitializează input-ul de stradă la redimensionare pentru a se adapta
+            if (!document.getElementById('add-modal').classList.contains('hidden')) {
+                initStreetInput();
+            }
+        });
     </script>
 </body>
 </html>
